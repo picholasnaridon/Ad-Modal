@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+      <script>
+        	// load GPT library
+	        var s = document.createElement('script');
+	        s.src = 'https://www.googletagservices.com/tag/js/gpt.js';
+	        s.type = 'text/javascript';
+	        s.async = true;
+	        document.getElementsByTagName('head')[0].appendChild(s);
+
+	        // load Prebid library
+	        // this is the "kitchen sink" version of Prebid for testing
+	        // we will send you a custom stripped-down version that has
+	        // a smaller footprint for production
+	        var s = document.createElement('script');
+	        s.src = '//acdn.adnxs.com/prebid/not-for-prod/1/prebid.js';
+	        s.type = 'text/javascript';
+	        s.async = true;
+	        document.getElementsByTagName('head')[0].appendChild(s);
+
+	        // configureable timeout
+            var PREBID_TIMEOUT = 1000;
+            var FAILSAFE_TIMEOUT = 3000;
+
+            // the size of ad we want to render
+            // this will be elaborated slightly if we
+            // add the 300x250
+            var sizes = [970, 250];
+
+            // Prebid configuration has IDs (such as "placementId")
+            // for each ad network -- we will send you more IDs
+            // that will be pasted here
+            var adUnits = [{
+                code: 'ad-1',
+                mediaTypes: {
+                    banner: {
+                        sizes: sizes
+                    }
+                },
+                bids: [{
+                    bidder: 'appnexus',
+                    params: {
+                        placementId: 13144370
+                    }
+                }]
+            }];
+
+            // this initiates the Google Ad library
+            // called "GPT"
+            //
+            // note that all "commands" send to the GPT
+            // library are pushed through "googletag.cmd.push"
+            // which allows Google to ensure their library
+            // is fully loaded before processing any
+            // instructions
+            var googletag = googletag || {};
+            googletag.cmd = googletag.cmd || [];
+            googletag.cmd.push(function() {
+                googletag.pubads().disableInitialLoad();
+            });
+
+            // this initiates PrebidJS
+            var pbjs = pbjs || {};
+            pbjs.que = pbjs.que || [];
+
+            // this "requestBids" function is what initiates
+            // the bid request to each of the ad networks
+            // asking how much they are willing to pay
+            // to show one ad
+            pbjs.que.push(function() {
+                pbjs.addAdUnits(adUnits);
+                pbjs.requestBids({
+                    bidsBackHandler: initAdserver,
+                    timeout: PREBID_TIMEOUT
+                });
+            });
+
+            // this "initAdserver" is the callback function
+            // that gets called when the header bidding ads
+            // (that is, Prebid) either:
+            //
+            // 1. gets a response from each advertiser
+            // 2. times out
+            //
+            // In either case, it's saying "time to give up"
+            // 
+            // And then it sends the "ad request" to DFP (the
+            // ad server).
+            // 
+            function initAdserver() {
+                if (pbjs.initAdserverSet) return;
+                pbjs.initAdserverSet = true;
+                googletag.cmd.push(function() {
+                    pbjs.que.push(function() {
+                        pbjs.setTargetingForGPTAsync();
+                        googletag.pubads().refresh();
+                    });
+                });
+            }
+
+            // this aborts header bidding, and just continues
+            // loading ads, if header bidding times out
+            setTimeout(function() {
+                initAdserver();
+            }, FAILSAFE_TIMEOUT);
+
+            // this defines the ad unit, so that the GPT library knows about it
+            // this is also where, in the future, we might decide to use "sizemapping"
+            // to show different sizes on different viewports
+            //
+            // Note the "setTargeting()" function. This is how you pass metadata into
+            // DFP so it can be used to target specific ads to specific users or pages
+            //
+            // The first parameter is the "key" and must be a string
+            // The second parameter is the "values" and must be a string or array-of-string
+            // (raw integers/booleans must be converted to strings)
+            //
+            // We strongly suggest lower-dashed-case as well
+            //
+            // Following are examples, but the keys can be pretty much anything you
+            // want as a targeting signal -- usually either attributes about the user
+            // or about the page itself
+            //
+            //
+            googletag.cmd.push(function() {
+                googletag.defineSlot('/33049290/PIANO', sizes, 'ad-1').addService(googletag.pubads());
+				googletag.pubads().setCentering(true);
+				googletag.pubads().collapseEmptyDivs();
+                googletag.pubads().enableSingleRequest();
+                googletag.pubads().setTargeting('interests', ['cars', 'trains']);
+                googletag.pubads().setTargeting('segments', ['alpha-1', 'beta-2']);
+                googletag.pubads().setTargeting('url', 'http://example.com');
+                googletag.enableServices();
+            });
+
+
+            // setup a hook to be notified when the ad has rendered
+            googletag.cmd.push(function() {
+                googletag.pubads().addEventListener('slotRenderEnded', function (event) {
+                	if (event.isEmpty) {
+                		// do something when no ads are available
+                		// this branch can't happen if we setup house ads 
+                		return;
+                	}
+                	// optionally do something with the slot
+                	var slot = event.slot;
+                	var divId = slot.getSlotElementId();
+                	var domElement = document.getElementById(divId);
+                	console.log(domElement);
+                });
+            });
+
+            // dynamically insert the ad DIV into the page
+            // using setTimeout() here, since the BODY tag needs to exist
+            // before we call append to it -- but in the real version,
+            // this won't be a problem since the DOM should always be
+            // ready before any of the ad stuff needs to happen
+            //
+            // NOTE, the "id" attribute here must match
+            // the 3rd paramter of the googletag.defineSlot('', '', 'ad-1')
+            // call above
+            //
+            setTimeout(function() {
+	            var div = document.createElement('div')
+	            div.setAttribute('id', 'ad-1');
+	            document.body.appendChild(div);
+
+	            // this call to DISPLAY is what actually renders the ad
+	            // so "googletag.pubads().refresh()" initiates the ad request
+	            // to DFP -- but "display" is what finally puts it on the screen 
+	            googletag.display('ad-1');
+            }, 1000)
+        </script>
+</head>
+<body>
+    <h2>Demo</h2>
+</body>
+</html>
