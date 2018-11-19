@@ -1,233 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Document</title>
-      <script>
-        	// load GPT library
-	        var s = document.createElement('script');
-	        s.src = 'https://www.googletagservices.com/tag/js/gpt.js';
-	        s.type = 'text/javascript';
-	        s.async = true;
-	        document.getElementsByTagName('head')[0].appendChild(s);
+    <script>
+      function loadLibraries() {
+        // load GPT library
+        var s = document.createElement("script");
+        s.src = "https://www.googletagservices.com/tag/js/gpt.js";
+        s.type = "text/javascript";
+        s.async = true;
+        document.getElementsByTagName("head")[0].appendChild(s);
 
-	        // load Prebid library
-	        // this is the "kitchen sink" version of Prebid for testing
-	        // we will send you a custom stripped-down version that has
-	        // a smaller footprint for production
-	        var s = document.createElement('script');
-	        s.src = '//acdn.adnxs.com/prebid/not-for-prod/1/prebid.js';
-	        s.type = 'text/javascript';
-	        s.async = true;
-	        document.getElementsByTagName('head')[0].appendChild(s);
+        // load Prebid library
+        // this is the "kitchen sink" version of Prebid for testing
+        // we will send you a custom stripped-down version that has
+        // a smaller footprint for production
+        var s = document.createElement("script");
+        s.src = "//acdn.adnxs.com/prebid/not-for-prod/1/prebid.js";
+        s.type = "text/javascript";
+        s.async = true;
+        document.getElementsByTagName("head")[0].appendChild(s);
 
-	        // configureable timeout
-            var PREBID_TIMEOUT = 1000;
-            var FAILSAFE_TIMEOUT = 3000;
+        // the ad size we want to render
+        var sizes = [970, 250];
 
-            // the size of ad we want to render
-            // this will be elaborated slightly if we
-            // add the 300x250
-            var sizes = [970, 250];
+        // the ad networks that are bidding
+        // currently 'AppNexus', but more IDs follow here
+        var adUnits = [
+          {
+            code: "ad-1",
+            mediaTypes: {
+              banner: {
+                sizes: sizes
+              }
+            },
+            bids: [
+              {
+                bidder: "appnexus",
+                params: {
+                  placementId: 13144370
+                }
+              }
+            ]
+          }
+        ];
 
-            // Prebid configuration has IDs (such as "placementId")
-            // for each ad network -- we will send you more IDs
-            // that will be pasted here
-            var adUnits = [{
-                code: 'ad-1',
-                mediaTypes: {
-                    banner: {
-                        sizes: sizes
-                    }
-                },
-                bids: [{
-                    bidder: 'appnexus',
-                    params: {
-                        placementId: 13144370
-                    }
-                }]
-            }];
+        // this initiates PrebidJS
+        window.pbjs = window.pbjs || {};
+        pbjs.que = pbjs.que || [];
+        pbjs.que.push(function() {
+          pbjs.addAdUnits(adUnits);
+        });
 
-            // this initiates the Google Ad library
-            // called "GPT"
-            //
-            // note that all "commands" send to the GPT
-            // library are pushed through "googletag.cmd.push"
-            // which allows Google to ensure their library
-            // is fully loaded before processing any
-            // instructions
-            var googletag = googletag || {};
-            googletag.cmd = googletag.cmd || [];
-            googletag.cmd.push(function() {
-                googletag.pubads().disableInitialLoad();
+        // this initiates the Google Ad library called "GPT"
+        window.googletag = window.googletag || {};
+        googletag.cmd = googletag.cmd || [];
+
+        // GPT setup
+        googletag.cmd.push(function() {
+          googletag
+            .defineSlot("/33049290/PIANO", sizes, "ad-1")
+            .addService(googletag.pubads());
+          googletag.pubads().setCentering(true);
+          googletag.pubads().collapseEmptyDivs();
+          googletag.pubads().enableSingleRequest();
+          googletag.pubads().disableInitialLoad();
+          googletag.pubads().setTargeting("interests", ["cars", "trains"]);
+          googletag.pubads().setTargeting("segments", ["alpha-1", "beta-2"]);
+          googletag.pubads().setTargeting("url", "http://example.com");
+          googletag.enableServices();
+        });
+
+        // OPTIONAL
+        // setup a hook to be notified when the ad has rendered
+        googletag.cmd.push(function() {
+          googletag
+            .pubads()
+            .addEventListener("slotRenderEnded", function(event) {
+              if (event.isEmpty) {
+                // do something when no ads are available
+                // this branch can't happen if we setup house ads
+                return;
+              }
+              // optionally do something with the slot
+              var slot = event.slot;
+              var divId = slot.getSlotElementId();
+              var domElement = document.getElementById(divId);
+              console.log(domElement);
             });
+        });
 
-            // this initiates PrebidJS
-            var pbjs = pbjs || {};
-            pbjs.que = pbjs.que || [];
+        // OPTIONAL
+        // setup a hook to be notified when a prebid bid is received
+        // this object will contain the CPM of the bid (if any)
+        pbjs.que.push(function() {
+          pbjs.onEvent("bidResponse", function(event) {
+            console.log(event);
+          });
+        });
+      }
 
-            // this "requestBids" function is what initiates
-            // the bid request to each of the ad networks
-            // asking how much they are willing to pay
-            // to show one ad
+      function showAd(selector) {
+        // place our ad after the given selector
+        var div = document.createElement("div");
+        div.setAttribute("id", "ad-1");
+        document.querySelectorAll(selector)[0].appendChild(div);
+
+        // configureable timeout
+        var PREBID_TIMEOUT = 1000;
+        var FAILSAFE_TIMEOUT = 3000;
+
+        // callback when header bidding ends or timeout occurs
+        // the "refresh()" function is what REALLY shows the ad
+        function initAdserver() {
+          if (pbjs.initAdserverSet) return;
+          pbjs.initAdserverSet = true;
+          googletag.cmd.push(function() {
             pbjs.que.push(function() {
-                pbjs.addAdUnits(adUnits);
-                pbjs.requestBids({
-                    bidsBackHandler: initAdserver,
-                    timeout: PREBID_TIMEOUT
+              var slots = googletag
+                .pubads()
+                .getSlots()
+                .filter(function(slot) {
+                  return slot.getSlotElementId() == "ad-1";
                 });
+              pbjs.setTargetingForGPTAsync();
+              googletag.pubads().refresh(slots);
             });
+          });
+        }
 
-            // this "initAdserver" is the callback function
-            // that gets called when the header bidding ads
-            // (that is, Prebid) either:
-            //
-            // 1. gets a response from each advertiser
-            // 2. times out
-            //
-            // In either case, it's saying "time to give up"
-            // 
-            // And then it sends the "ad request" to DFP (the
-            // ad server).
-            // 
-            function initAdserver() {
-                if (pbjs.initAdserverSet) return;
-                pbjs.initAdserverSet = true;
-                googletag.cmd.push(function() {
-                    pbjs.que.push(function() {
-                        pbjs.setTargetingForGPTAsync();
-                        googletag.pubads().refresh();
-                    });
-                });
-            }
+        // initiates the header bidding request to
+        // each ad network asking for their best bid
+        pbjs.que.push(function() {
+          pbjs.requestBids({
+            bidsBackHandler: initAdserver,
+            timeout: PREBID_TIMEOUT
+          });
+        });
 
-            // this aborts header bidding, and just continues
-            // loading ads, if header bidding times out
-            setTimeout(function() {
-                initAdserver();
-            }, FAILSAFE_TIMEOUT);
+        // catchall timeout, to make sure we show an ad, even
+        // if header bidding fails or hits an error
+        setTimeout(function() {
+          initAdserver();
+        }, FAILSAFE_TIMEOUT);
+      }
+      loadLibraries();
+      
+    </script>
+  </head>
 
-            // this defines the ad unit, so that the GPT library knows about it
-            // this is also where, in the future, we might decide to use "sizemapping"
-            // to show different sizes on different viewports
-            //
-            // Note the "setTargeting()" function. This is how you pass metadata into
-            // DFP so it can be used to target specific ads to specific users or pages
-            //
-            // The first parameter is the "key" and must be a string
-            // The second parameter is the "values" and must be a string or array-of-string
-            // (raw integers/booleans must be converted to strings)
-            //
-            // We strongly suggest lower-dashed-case as well
-            //
-            // Following are examples, but the keys can be pretty much anything you
-            // want as a targeting signal -- usually either attributes about the user
-            // or about the page itself
-            //
-            //
-            googletag.cmd.push(function() {
-                googletag.defineSlot('/33049290/PIANO', sizes, 'ad-1').addService(googletag.pubads());
-				googletag.pubads().setCentering(true);
-				googletag.pubads().collapseEmptyDivs();
-                googletag.pubads().enableSingleRequest();
-                googletag.pubads().setTargeting('interests', ['cars', 'trains']);
-                googletag.pubads().setTargeting('segments', ['alpha-1', 'beta-2']);
-                googletag.pubads().setTargeting('url', 'http://example.com');
-                googletag.enableServices();
-            });
+  <body>
+    <script>
+      var addStyles = () => {
+        var styleNode = document.createElement("div");
+        styleNode.innerHTML = ` <style>
+                                  .modal {
+                                    display: block;
+                                    position: fixed;
+                                    z-index: 1;
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    overflow: auto;
+                                    background-color: rgb(0,0,0);
+                                    background-color: rgba(0,0,0,0.4);
+                                  }
+            
+                                  .modal-content {
+                                    background-color: #fefefe;
+                                    margin: 15% auto;
+                                    padding: 20px;
+                                    border: 1px solid #888;
+                                    width: 90%;
+                                  }
+              
+                                  .close {
+                                    color: #aaa;s
+                                    float: right;
+                                    font-size: 28px;
+                                    font-weight: bold;
+                                  }
+      								    	  </style>`;
+        document.body.appendChild(styleNode);
+      };
 
+      var addContent = () => {
+        var modal = document.createElement(`div`);
+        modal.className = "modal";
+        modal.innerHTML = `<div class="modal-content" style=>
+                            <span class="close">&times;</span>
+                            <p>Some text in the Modal..</p>
+                            <div id='ad-container'></div>
+                          </div>`;
 
-            // setup a hook to be notified when the ad has rendered
-            googletag.cmd.push(function() {
-                googletag.pubads().addEventListener('slotRenderEnded', function (event) {
-                	if (event.isEmpty) {
-                		// do something when no ads are available
-                		// this branch can't happen if we setup house ads 
-                		return;
-                	}
-                	// optionally do something with the slot
-                	var slot = event.slot;
-                	var divId = slot.getSlotElementId();
-                	var domElement = document.getElementById(divId);
-                	console.log(domElement);
-                });
-            });
+        document.body.appendChild(modal);
+        closeButton = document.querySelector(".close");
 
-            // dynamically insert the ad DIV into the page
-            // using setTimeout() here, since the BODY tag needs to exist
-            // before we call append to it -- but in the real version,
-            // this won't be a problem since the DOM should always be
-            // ready before any of the ad stuff needs to happen
-            //
-            // NOTE, the "id" attribute here must match
-            // the 3rd paramter of the googletag.defineSlot('', '', 'ad-1')
-            // call above
-            //
-            var createModal = function() {
-                var divNode = document.createElement("div");
-              divNode.innerHTML = `<br>
-                                  <style>
-                                      .modal {
-                                        display: block; 
-                                        position: fixed;
-                                        z-index: 1;
-                                        left: 0;
-                                        top: 0;
-                                        width: 100%;
-                                        height: 100%; 
-                                        overflow: auto; 
-                                        background-color: rgb(0,0,0); 
-                                        background-color: rgba(0,0,0,0.4);
-                                    }
+        closeButton.addEventListener("click", function() {
+          modal.style.display = "none";
+        });
+      };
 
-                                    .modal-content {
-                                        background-color: #fefefe;
-                                        margin: 15% auto; /* 15% from the top and centered */
-                                        padding: 20px;
-                                        border: 1px solid #888;
-                                        width: 80%; /* Could be more or less, depending on screen size */
-                                    }
+      var logPianoConversion = () => {
+        console.log("Conversion");
+      };
 
-                                    .close {
-                                        color: #aaa;
-                                        float: right;
-                                        font-size: 28px;
-                                        font-weight: bold;
-                                    }
-                                  </style>`;
-
-            document.body.appendChild(divNode);
-
-            var modal =  document.createElement(`div`)
-            modal.className = 'modal'
-            modal.innerHTML = `<div class="modal-content" style=>
-                                <span class="close">&times;</span>
-                                <p>Some text in the Modal..</p>
-                                <div id='ad-1'></div>
-                              </div>`
-
-            document.body.appendChild(modal); 
-            closeButton = document.querySelector('.close')
-            closeButton.addEventListener('click', function(){
-                modal.style.display = 'none'
-            })
-                
-	            // this call to DISPLAY is what actually renders the ad
-	            // so "googletag.pubads().refresh()" initiates the ad request
-	            // to DFP -- but "display" is what finally puts it on the screen 
-	            googletag.display('ad-1');
-            }
-        </script>
-</head>
-<body>
+      var createModal = function() {
+        addStyles();
+        addContent();
+        showAd("#ad-container");
+      };
+    </script>
     <h2>Demo</h2>
-    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita, voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non, ipsum.</p>
-    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita, voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non, ipsum.</p>
-    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita, voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non, ipsum.</p>
+    <p>
+      Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita,
+      voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque
+      tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non,
+      ipsum.
+    </p>
+    <p>
+      Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita,
+      voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque
+      tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non,
+      ipsum.
+    </p>
+    <p>
+      Lorem ipsum dolor, sit amet consectetur adipisicing elit. Expedita,
+      voluptate esse quam adipisci, fugiat eos aperiam asperiores sit doloremque
+      tempora veritatis eius, exercitationem qui et totam nesciunt quo. Non,
+      ipsum.
+    </p>
 
-    <script>(function(src){var a=document.createElement("script");a.type="text/javascript";a.async=true;a.src=src;var b=document.getElementsByTagName("script")[0];b.parentNode.insertBefore(a,b)})("https://sandbox.tinypass.com/xbuilder/experience/load?aid=oiGmjC8JwK");</script>
-</body>
+    <script>
+      (function(src) {
+        var a = document.createElement("script");
+        a.type = "text/javascript";
+        a.async = true;
+        a.src = src;
+        var b = document.getElementsByTagName("script")[0];
+        b.parentNode.insertBefore(a, b);
+      })(
+        "https://sandbox.tinypass.com/xbuilder/experience/load?aid=oiGmjC8JwK"
+      );
+    </script>
+  </body>
 </html>
-
