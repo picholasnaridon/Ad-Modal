@@ -1,3 +1,0 @@
-click ad()
-click close()
-click recommendedStory()
