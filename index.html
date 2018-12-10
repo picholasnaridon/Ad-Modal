@@ -66,11 +66,12 @@
 
         
         googletag.cmd.push(function() {
+
           var mapping = googletag.sizeMapping().
-            addSize([1024, 0], [970, 250]).
+            addSize([1290, 0], [970, 250]).
             addSize([0, 0], [300, 250]).
             build();
-          googletag.defineSlot('/33049290/PIANO', sizes, 'ad-1').defineSizeMapping(mapping).addService(googletag.pubads())
+          googletag.defineSlot('/33049290/PIANO', mapping, 'ad-1').defineSizeMapping(mapping).addService(googletag.pubads())
           googletag.pubads().setCentering(true);
           googletag.pubads().collapseEmptyDivs();
           googletag.pubads().enableSingleRequest();
@@ -97,19 +98,22 @@
           };
 
           // detect changes to the viewport
-          var oldSize = 0;
+          var oldSize = document.documentElement.clientWidth
+          console.log(oldSize)
           var refreshOnSizeChange = debounce(function() {
-          var newWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-          var newHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+          var newWidth = document.getElementById("rec-modal").getBoundingClientRect().width
 
           // if we crossed a threshold, call refresh() to get a new ad
           console.log("debounce called")
-          if (oldSize < 1024 && newWidth >= 1024) {
+          console.log(document.getElementById("rec-modal").getBoundingClientRect().width)
+          if (oldSize < 970 && newWidth >= 970) {
             oldSize = newWidth;
-            googletag.pubads().refresh();
-          } else if (oldSize >= 1024 && newWidth < 1024) {
+            console.log("refreshed greater than 972")
+            googletag.pubads().refresh()
+          } else if (oldSize >= 970 && newWidth < 970) {
             oldSize = newWidth;
-            googletag.pubads().refresh();
+            console.log("refreshed less than 972")
+            googletag.pubads().refresh()
           }
           }, 250);
 
@@ -369,7 +373,7 @@
       var addContent = () => {
         var modal = document.createElement(`div`);
         modal.className = "modal";
-        modal.innerHTML = `<div class="modal-content" >
+        modal.innerHTML = `<div class="modal-content" id="rec-modal">
                                 <div class="pn-header">
                                  <button class="pn-modal__close unbutton" id="close">
                                   <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.38464 0L0 1.38477L7.6153 9L0 16.6152L1.38464 18L9 10.3848L16.6154 18L18 16.6157L10.3846 9L18.0001 1.38477L16.6154 0L8.99988 7.61523L1.38464 0Z"/></svg>
