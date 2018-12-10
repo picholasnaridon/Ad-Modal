@@ -366,11 +366,47 @@
                                         font-family: 'Helvetica Neue';
                                         font-style: normal;
                                     }
+                                    .CTA_text{
+                                        font-family: 'Helvetica Neue', sans-serif;
+                                        text-align: center;
+                                        font-size: 29px;
+                                        margin: 40px;
+                                    }
+
+                                    .pn-modal__join {
+                                      width: 250px;
+                                      margin: 0 auto;
+                                      display: block;
+                                      padding: 10px 5px;
+                                      font-family: 'Helvetica', sans-serif;
+                                      font-weight: 900;
+                                      font-size: 16px;
+                                      line-height: 20px;
+                                      color: #ffffff;
+                                      background-color: #00C300;
+                                      transition: background-color 0.2s linear;
+                                    }
+
+                                    .pn-modal__join:hover,
+                                    .pn-modal__join:focus {
+                                      background-color: #00C300;
+                                      color: #ffffff;
+                                      border: 2px solid #00c300;
+                                    }
+
+                                    .pn-modal__join:active {
+                                      opacity: 0.8;
+                                    }
+
+                                    .pn-modal__join:visited{
+                                      color: #ffffff;
+                                      background-color: #00c300;
+                                    }
       								    	  </style>`;
         document.body.appendChild(styleNode);
       };
 
-      var addContent = () => {
+      var addNonLoyalContent = () => {
         var modal = document.createElement(`div`);
         modal.className = "modal";
         modal.innerHTML = `<div class="modal-content" id="rec-modal">
@@ -388,6 +424,39 @@
                                 <div id="ad-container">
                                 </div>
                                 <p class="ad_text">ADVERTISEMENT</p>
+                            </div>`;
+
+        document.body.appendChild(modal);
+        closeButton = document.getElementById("close");
+
+        closeButton.addEventListener("click", function() {
+          modal.style.display = "none";
+        });
+      };
+      var addLoyalContent = () => {
+        var modal = document.createElement(`div`);
+        modal.className = "modal";
+        modal.innerHTML = `<div class="modal-content" id="rec-modal">
+                                <div class="pn-header">
+                                 <button class="pn-modal__close unbutton" id="close">
+                                  <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.38464 0L0 1.38477L7.6153 9L0 16.6152L1.38464 18L9 10.3848L16.6154 18L18 16.6157L10.3846 9L18.0001 1.38477L16.6154 0L8.99988 7.61523L1.38464 0Z"/></svg>
+                                </button>
+                                    <img class="pn-header__background" src="https://i.piano.io/managedservices/the-washington-times/theChive_Logo.svg" width="173" height="36.18" alt="">
+                                </div>                                
+                                <div class="content">
+                                  <h1 class="h1">Don't miss our most popular &#x1F600;Humor, &#x1F525;Hotness and &#x1F397;Humanity posts!</h1>
+                                </div>                                  
+                                <div id="li_recommended_content">                                      
+                                </div>
+                                <div class="join-now">
+                                  <p class="CTA_text">Get your chive on. Join now.</p>
+                                  <button class="pn-modal__join" type="button" ng-click="startCheckout('IDHERE')" external-event="offer-join-now">BECOME A MEMBER</button>
+                                  </div>
+                                  
+                                  <div class="pn-modal__footer">
+                                  </div>
+                                </div>
+
                             </div>`;
 
         document.body.appendChild(modal);
@@ -430,11 +499,17 @@
         articleContainer.appendChild(card)
       }
 
-      var createModal = function() {
+      var createAdModal = function() {
         addStyles();
-        addContent();
-        parseLiftignite()
+        addNonLoyalContent();
+        parseLiftignite();
         showAd("#ad-container");
+      };
+
+      var createSubscribeModal = function() {
+        addStyles();
+        addLoyalContent();
+        parseLiftignite();
       };
 
     </script>
